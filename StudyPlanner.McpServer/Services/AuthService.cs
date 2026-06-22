@@ -6,13 +6,12 @@ namespace StudyPlanner.McpServer.Services;
 public class AuthService
 {
     private readonly HttpClient _httpClient;
+    private readonly AuthState _authState;
 
-    public string? Token { get; private set; }
-    public string? Email { get; private set; }
-
-    public AuthService(HttpClient httpClient)
+    public AuthService(HttpClient httpClient, AuthState authState)
     {
         _httpClient = httpClient;
+        _authState = authState;
     }
 
     public async Task<string> LoginAsync(string email, string password)
@@ -37,9 +36,9 @@ public class AuthService
             return "Login failed. Token was not returned.";
         }
 
-        Token = loginResponse.Token;
-        Email = loginResponse.Email;
+        _authState.Token = loginResponse.Token;
+        _authState.Email = loginResponse.Email;
 
-        return $"Login successful for {Email}.";
+        return $"Login successful for {_authState.Email}.";
     }
 }
