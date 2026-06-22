@@ -84,6 +84,104 @@ public class StudyTasksController : ControllerBase
         return Ok(task);
     }
 
+    [HttpGet("pending")]
+    public async Task<ActionResult<List<StudyTaskReadDto>>> GetPending()
+    {
+        var userId = GetCurrentUserId();
+
+        var tasks = await _context.StudyTasks
+            .Include(t => t.Subject)
+            .Include(t => t.StudyPlan)
+            .Where(t => t.Subject.UserId == userId &&
+                        t.Status != StudyPlanner.Api.Enums.StudyTaskStatus.Completed)
+            .OrderBy(t => t.Deadline)
+            .Select(t => new StudyTaskReadDto
+            {
+                Id = t.Id,
+                Title = t.Title,
+                Description = t.Description,
+                Status = t.Status,
+                Priority = t.Priority,
+                Deadline = t.Deadline,
+                EstimatedDurationMinutes = t.EstimatedDurationMinutes,
+                SubjectId = t.SubjectId,
+                SubjectName = t.Subject.Name,
+                StudyPlanId = t.StudyPlanId,
+                StudyPlanTitle = t.StudyPlan != null ? t.StudyPlan.Title : null
+            })
+            .ToListAsync();
+
+        return Ok(tasks);
+    }
+
+    [HttpGet("by-subject/{subjectId}")]
+    public async Task<ActionResult<List<StudyTaskReadDto>>> GetBySubject(int subjectId)
+    {
+        var userId = GetCurrentUserId();
+
+        var subjectExists = await _context.Subjects
+            .AnyAsync(s => s.Id == subjectId && s.UserId == userId);
+
+        if (!subjectExists)
+            return NotFound("Subject not found.");
+
+        var tasks = await _context.StudyTasks
+            .Include(t => t.Subject)
+            .Include(t => t.StudyPlan)
+            .Where(t => t.SubjectId == subjectId)
+            .Select(t => new StudyTaskReadDto
+            {
+                Id = t.Id,
+                Title = t.Title,
+                Description = t.Description,
+                Status = t.Status,
+                Priority = t.Priority,
+                Deadline = t.Deadline,
+                EstimatedDurationMinutes = t.EstimatedDurationMinutes,
+                SubjectId = t.SubjectId,
+                SubjectName = t.Subject.Name,
+                StudyPlanId = t.StudyPlanId,
+                StudyPlanTitle = t.StudyPlan != null ? t.StudyPlan.Title : null
+            })
+            .ToListAsync();
+
+        return Ok(tasks);
+    }
+
+    [HttpGet("by-plan/{planId}")]
+    public async Task<ActionResult<List<StudyTaskReadDto>>> GetByPlan(int planId)
+    {
+        var userId = GetCurrentUserId();
+
+        var planExists = await _context.StudyPlans
+            .AnyAsync(p => p.Id == planId && p.UserId == userId);
+
+        if (!planExists)
+            return NotFound("Study plan not found.");
+
+        var tasks = await _context.StudyTasks
+            .Include(t => t.Subject)
+            .Include(t => t.StudyPlan)
+            .Where(t => t.StudyPlanId == planId)
+            .Select(t => new StudyTaskReadDto
+            {
+                Id = t.Id,
+                Title = t.Title,
+                Description = t.Description,
+                Status = t.Status,
+                Priority = t.Priority,
+                Deadline = t.Deadline,
+                EstimatedDurationMinutes = t.EstimatedDurationMinutes,
+                SubjectId = t.SubjectId,
+                SubjectName = t.Subject.Name,
+                StudyPlanId = t.StudyPlanId,
+                StudyPlanTitle = t.StudyPlan != null ? t.StudyPlan.Title : null
+            })
+            .ToListAsync();
+
+        return Ok(tasks);
+    }
+
     [HttpPost]
     public async Task<ActionResult<StudyTaskReadDto>> Create(StudyTaskCreateDto dto)
     {

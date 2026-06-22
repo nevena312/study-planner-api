@@ -74,6 +74,31 @@ public class ExamsController : ControllerBase
         return Ok(exam);
     }
 
+    [HttpGet("upcoming")]
+    public async Task<ActionResult<List<ExamReadDto>>> GetUpcoming()
+    {
+        var userId = GetCurrentUserId();
+        var now = DateTime.UtcNow;
+
+        var exams = await _context.Exams
+            .Include(e => e.Subject)
+            .Where(e => e.Subject.UserId == userId && e.ExamDate >= now)
+            .OrderBy(e => e.ExamDate)
+            .Select(e => new ExamReadDto
+            {
+                Id = e.Id,
+                Title = e.Title,
+                ExamDate = e.ExamDate,
+                Description = e.Description,
+                Type = e.Type,
+                SubjectId = e.SubjectId,
+                SubjectName = e.Subject.Name
+            })
+            .ToListAsync();
+
+        return Ok(exams);
+    }
+
     [HttpPost]
     public async Task<ActionResult<ExamReadDto>> Create(ExamCreateDto dto)
     {
