@@ -1,0 +1,196 @@
+:root {
+  --primary: #5b8def;
+  --primary-light: #edf4ff;
+
+  --success: #74e3ad;
+  --warning: #f0d26e;
+  --danger: #e80c9f;
+
+  --background: #eef5ff;
+  --card-bg: #ffffff;
+
+  --text-main: #2c3e50;
+  --text-secondary: #6c7a89;
+}
+
+body {
+  background: var(--background);
+  font-family: "Segoe UI", sans-serif;
+  color: var(--text-main);
+}
+
+.navbar {
+  background: white !important;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.06);
+}
+
+.navbar-brand {
+  font-weight: 700;
+  color: var(--primary) !important;
+}
+
+.nav-link {
+  color: var(--text-main) !important;
+}
+
+.nav-link:hover {
+  color: var(--primary) !important;
+}
+
+.navbar-text {
+  color: var(--text-secondary) !important;
+}
+
+.container {
+  margin-bottom: 40px;
+}
+
+h2 {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.card {
+  border: none;
+  border-radius: 18px;
+  background: var(--card-bg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+.dashboard-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.dashboard-card {
+  transition: all 0.2s ease;
+  min-height: 140px;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(91, 141, 239, 0.18);
+}
+
+.dashboard-card h5 {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.dashboard-card .fs-3 {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.next-exam-card {
+  border-left: 6px solid var(--primary);
+}
+
+.next-exam-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.next-exam-subject {
+  color: var(--text-secondary);
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.table thead {
+  background: var(--primary-light);
+}
+
+.table th {
+  border-bottom: none;
+  color: var(--text-main);
+}
+
+.table td {
+  vertical-align: middle;
+}
+
+.btn {
+  border-radius: 10px;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: var(--primary);
+}
+
+.btn-primary:hover {
+  background: #4d7ddd;
+}
+
+.btn-warning {
+  background: var(--warning);
+  color: white;
+}
+
+.btn-warning:hover {
+  background: #e5aa5c;
+  color: white;
+}
+
+.btn-danger {
+  background: var(--danger);
+}
+
+.btn-danger:hover {
+  background: #d90b53;
+}
+
+.btn-secondary {
+  background: #a7b3c2;
+}
+
+.btn-secondary:hover {
+  background: #96a4b4;
+}
+
+.btn-info {
+  background: #7fb7e6;
+  color: white;
+}
+
+.btn-info:hover {
+  background: #6aa8dc;
+  color: white;
+}
+
+.btn-outline-light {
+  border: 1px solid var(--primary);
+  color: var(--primary);
+}
+
+.btn-outline-light:hover {
+  background: var(--primary);
+  color: white;
+}
+
+.form-control,
+.form-select {
+  border-radius: 12px;
+  border: 1px solid #d7e3f4;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 0.15rem rgba(91, 141, 239, 0.2);
+}
+
+.alert {
+  border: none;
+  border-radius: 12px;
+}
+
+.card-body h5 {
+  font-weight: 600;
+}

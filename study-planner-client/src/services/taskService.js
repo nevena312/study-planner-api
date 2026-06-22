@@ -17,3 +17,8 @@ export const updateTask = async (id, task) => {
 export const deleteTask = async (id) => {
   await axiosClient.delete(`/studytasks/${id}`)
 }
+
+export const getTasksByPlan = async (planId) => {
+  const response = await axiosClient.get(`/studytasks/by-plan/${planId}`)
+  return response.data
+}

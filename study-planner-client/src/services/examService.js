@@ -17,3 +17,8 @@ export const updateExam = async (id, exam) => {
 export const deleteExam = async (id) => {
   await axiosClient.delete(`/exams/${id}`)
 }
+
+export const getUpcomingExams = async () => {
+  const response = await axiosClient.get('/exams/upcoming')
+  return response.data
+}

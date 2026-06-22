@@ -5,11 +5,35 @@ import {
   updateStudyPlan,
   deleteStudyPlan
 } from '../services/studyPlanService'
+import { getTasksByPlan } from '../services/taskService'
+
+const getStatusLabel = (value) => {
+  const statuses = {
+    1: 'Planned',
+    2: 'In Progress',
+    3: 'Completed'
+  }
+
+  return statuses[value] || value
+}
+
+const getPriorityLabel = (value) => {
+  const priorities = {
+    1: 'Low',
+    2: 'Medium',
+    3: 'High'
+  }
+
+  return priorities[value] || value
+}
 
 function StudyPlansPage() {
   const [studyPlans, setStudyPlans] = useState([])
   const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState('')
+  
+  const [selectedPlanTitle, setSelectedPlanTitle] = useState('')
+  const [planTasks, setPlanTasks] = useState([])
 
   const [formData, setFormData] = useState({
     title: '',
@@ -83,6 +107,12 @@ function StudyPlansPage() {
     } catch {
       setError('Failed to delete study plan.')
     }
+  }
+
+  const handleViewTasks = async (plan) => {
+    const data = await getTasksByPlan(plan.id)
+    setSelectedPlanTitle(plan.title)
+    setPlanTasks(data)
   }
 
   const resetForm = () => {
@@ -168,7 +198,7 @@ function StudyPlansPage() {
             <th>Start</th>
             <th>End</th>
             <th>Tasks</th>
-            <th style={{ width: '180px' }}>Actions</th>
+            <th style={{ width: '280px' }}>Actions</th>
           </tr>
         </thead>
 
@@ -180,6 +210,13 @@ function StudyPlansPage() {
               <td>{new Date(plan.endDate).toLocaleString()}</td>
               <td>{plan.taskCount}</td>
               <td>
+                <button
+                  className="btn btn-sm btn-info me-2"
+                  onClick={() => handleViewTasks(plan)}
+                >
+                  View Tasks
+                </button>
+
                 <button
                   className="btn btn-sm btn-warning me-2"
                   onClick={() => handleEdit(plan)}
@@ -206,6 +243,43 @@ function StudyPlansPage() {
           )}
         </tbody>
       </table>
+
+      {selectedPlanTitle && (
+        <div className="card mt-4">
+          <div className="card-body">
+            <h5>Tasks in plan: {selectedPlanTitle}</h5>
+
+            {planTasks.length === 0 ? (
+              <p>No tasks in this study plan.</p>
+            ) : (
+              <table className="table table-sm table-striped mt-3">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Subject</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Deadline</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {planTasks.map(task => (
+                    <tr key={task.id}>
+                      <td>{task.title}</td>
+                      <td>{task.subjectName}</td>
+                      <td>{getStatusLabel(task.status)}</td>
+                      <td>{getPriorityLabel(task.priority)}</td>
+                      <td>{task.deadline ? new Date(task.deadline).toLocaleString() : '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
+      
     </div>
   )
 }
