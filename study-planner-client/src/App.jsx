@@ -6,6 +6,7 @@ import Navbar from './components/Navbar'
 import ProtectedRoute from './components/ProtectedRoute'
 import SubjectsPage from './pages/SubjectsPage'
 import ExamsPage from './pages/ExamsPage'
+import TasksPage from './pages/TasksPage'
 
 function App() {
   const protectedPage = (page) => (
@@ -25,7 +26,7 @@ function App() {
         <Route path="/dashboard" element={protectedPage(<DashboardPage />)} />
         <Route path="/subjects" element={protectedPage(<SubjectsPage />)} />
         <Route path="/exams" element={protectedPage(<ExamsPage />)} />
-        <Route path="/tasks" element={protectedPage(<h2 className="container mt-4">Tasks page</h2>)} />
+        <Route path="/tasks" element={protectedPage(<TasksPage />)} />
         <Route path="/studyplans" element={protectedPage(<h2 className="container mt-4">Study Plans page</h2>)} />
       </Routes>
     </BrowserRouter>
