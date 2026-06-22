@@ -20,3 +20,8 @@ obj/
 
 # App settings
 appsettings.Development.json
+
+# React / Node
+study-planner-client/node_modules/
+study-planner-client/dist/
+study-planner-client/.env
