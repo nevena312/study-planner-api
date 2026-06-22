@@ -37,6 +37,12 @@ body {
   color: var(--primary) !important;
 }
 
+.active-nav-link {
+  color: var(--primary) !important;
+  font-weight: 600;
+  border-bottom: 2px solid var(--primary);
+}
+
 .navbar-text {
   color: var(--text-secondary) !important;
 }

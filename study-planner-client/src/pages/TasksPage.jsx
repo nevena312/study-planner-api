@@ -7,6 +7,7 @@ import {
   updateTask,
   deleteTask
 } from '../services/taskService'
+import { useSearchParams } from 'react-router-dom'
 
 const taskStatuses = [
   { value: 1, label: 'Planned' },
@@ -37,6 +38,11 @@ function TasksPage() {
     subjectId: '',
     studyPlanId: ''
   })
+
+  const [searchParams] = useSearchParams()
+
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '')
+  const [priorityFilter, setPriorityFilter] = useState('')   
 
   const loadData = async () => {
     const [tasksData, subjectsData, plansData] = await Promise.all([
@@ -154,13 +160,128 @@ function TasksPage() {
     return taskPriorities.find(p => p.value === value)?.label || value
   }
 
+  const filteredTasks = tasks.filter(task => {
+    const matchesStatus =
+        statusFilter === '' ||
+        (statusFilter === 'pending' && task.status !== 3) ||
+        (statusFilter === 'completed' && task.status === 3) ||
+        Number(statusFilter) === task.status
+
+    const matchesPriority =
+        priorityFilter === '' || Number(priorityFilter) === task.priority
+
+    return matchesStatus && matchesPriority
+  })
+
   return (
     <div className="container mt-4">
       <h2>Tasks</h2>
 
       {error && <div className="alert alert-danger">{error}</div>}
 
-      <form onSubmit={handleSubmit} className="card card-body mb-4">
+
+      <div className="card card-body mb-4">
+        <h5>Filters</h5>
+
+        <div className="row">
+            <div className="col-md-6 mb-3">
+            <label className="form-label">Status</label>
+            <select
+                className="form-select"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+            >
+                <option value="">All statuses</option>
+                <option value="pending">Pending</option>
+                <option value="1">Planned</option>
+                <option value="2">In Progress</option>
+                <option value="3">Completed</option>
+            </select>
+            </div>
+
+            <div className="col-md-6 mb-3">
+            <label className="form-label">Priority</label>
+            <select
+                className="form-select"
+                value={priorityFilter}
+                onChange={(e) => setPriorityFilter(e.target.value)}
+            >
+                <option value="">All priorities</option>
+                <option value="1">Low</option>
+                <option value="2">Medium</option>
+                <option value="3">High</option>
+            </select>
+            </div>
+        </div>
+
+        <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => {
+            setStatusFilter('')
+            setPriorityFilter('')
+            }}
+        >
+            Clear filters
+        </button>
+      </div>
+
+
+      <div className="card">
+        <div className="card-body">
+            <table className="table table-striped">
+                <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Subject</th>
+                    <th>Plan</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Deadline</th>
+                    <th style={{ width: '180px' }}>Actions</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                {filteredTasks.map(task => (
+                    <tr key={task.id}>
+                    <td>{task.title}</td>
+                    <td>{task.subjectName}</td>
+                    <td>{task.studyPlanTitle || '-'}</td>
+                    <td>{getStatusLabel(task.status)}</td>
+                    <td>{getPriorityLabel(task.priority)}</td>
+                    <td>{task.deadline ? new Date(task.deadline).toLocaleString() : '-'}</td>
+                    <td>
+                        <button
+                        className="btn btn-sm btn-warning me-2"
+                        onClick={() => handleEdit(task)}
+                        >
+                        Edit
+                        </button>
+
+                        <button
+                        className="btn btn-sm btn-danger"
+                        onClick={() => handleDelete(task.id)}
+                        >
+                        Delete
+                        </button>
+                    </td>
+                    </tr>
+                ))}
+
+                {filteredTasks.length === 0 && (
+                    <tr>
+                    <td colSpan="7" className="text-center">
+                        No tasks found.
+                    </td>
+                    </tr>
+                )}
+                </tbody>
+            </table>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="card card-body mb-4 mt-4">
         <h5>{editingId ? 'Edit task' : 'Add task'}</h5>
 
         <div className="mb-3">
@@ -289,55 +410,6 @@ function TasksPage() {
         </div>
       </form>
 
-      <table className="table table-striped">
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Subject</th>
-            <th>Plan</th>
-            <th>Status</th>
-            <th>Priority</th>
-            <th>Deadline</th>
-            <th style={{ width: '180px' }}>Actions</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {tasks.map(task => (
-            <tr key={task.id}>
-              <td>{task.title}</td>
-              <td>{task.subjectName}</td>
-              <td>{task.studyPlanTitle || '-'}</td>
-              <td>{getStatusLabel(task.status)}</td>
-              <td>{getPriorityLabel(task.priority)}</td>
-              <td>{task.deadline ? new Date(task.deadline).toLocaleString() : '-'}</td>
-              <td>
-                <button
-                  className="btn btn-sm btn-warning me-2"
-                  onClick={() => handleEdit(task)}
-                >
-                  Edit
-                </button>
-
-                <button
-                  className="btn btn-sm btn-danger"
-                  onClick={() => handleDelete(task.id)}
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-
-          {tasks.length === 0 && (
-            <tr>
-              <td colSpan="7" className="text-center">
-                No tasks found.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
     </div>
   )
 }

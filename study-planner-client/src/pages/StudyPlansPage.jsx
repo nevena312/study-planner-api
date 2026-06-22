@@ -131,7 +131,102 @@ function StudyPlansPage() {
 
       {error && <div className="alert alert-danger">{error}</div>}
 
-      <form onSubmit={handleSubmit} className="card card-body mb-4">
+      
+
+      <div className="card">
+        <div className="card-body">
+            <table className="table table-striped">
+                <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Tasks</th>
+                    <th style={{ width: '280px' }}>Actions</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                {studyPlans.map(plan => (
+                    <tr key={plan.id}>
+                    <td>{plan.title}</td>
+                    <td>{new Date(plan.startDate).toLocaleString()}</td>
+                    <td>{new Date(plan.endDate).toLocaleString()}</td>
+                    <td>{plan.taskCount}</td>
+                    <td>
+                        <button
+                        className="btn btn-sm btn-info me-2"
+                        onClick={() => handleViewTasks(plan)}
+                        >
+                        View Tasks
+                        </button>
+
+                        <button
+                        className="btn btn-sm btn-warning me-2"
+                        onClick={() => handleEdit(plan)}
+                        >
+                        Edit
+                        </button>
+
+                        <button
+                        className="btn btn-sm btn-danger"
+                        onClick={() => handleDelete(plan.id)}
+                        >
+                        Delete
+                        </button>
+                    </td>
+                    </tr>
+                ))}
+
+                {studyPlans.length === 0 && (
+                    <tr>
+                    <td colSpan="5" className="text-center">
+                        No study plans found.
+                    </td>
+                    </tr>
+                )}
+                </tbody>
+            </table>
+        </div>
+      </div>
+
+      {selectedPlanTitle && (
+        <div className="card mt-4">
+          <div className="card-body">
+            <h5>Tasks in plan: {selectedPlanTitle}</h5>
+
+            {planTasks.length === 0 ? (
+              <p>No tasks in this study plan.</p>
+            ) : (
+              <table className="table table-sm table-striped mt-3">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Subject</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Deadline</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {planTasks.map(task => (
+                    <tr key={task.id}>
+                      <td>{task.title}</td>
+                      <td>{task.subjectName}</td>
+                      <td>{getStatusLabel(task.status)}</td>
+                      <td>{getPriorityLabel(task.priority)}</td>
+                      <td>{task.deadline ? new Date(task.deadline).toLocaleString() : '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
+      
+      <form onSubmit={handleSubmit} className="card card-body mb-4 mt-4">
         <h5>{editingId ? 'Edit study plan' : 'Add study plan'}</h5>
 
         <div className="mb-3">
@@ -191,95 +286,6 @@ function StudyPlansPage() {
         )}
       </form>
 
-      <table className="table table-striped">
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Start</th>
-            <th>End</th>
-            <th>Tasks</th>
-            <th style={{ width: '280px' }}>Actions</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {studyPlans.map(plan => (
-            <tr key={plan.id}>
-              <td>{plan.title}</td>
-              <td>{new Date(plan.startDate).toLocaleString()}</td>
-              <td>{new Date(plan.endDate).toLocaleString()}</td>
-              <td>{plan.taskCount}</td>
-              <td>
-                <button
-                  className="btn btn-sm btn-info me-2"
-                  onClick={() => handleViewTasks(plan)}
-                >
-                  View Tasks
-                </button>
-
-                <button
-                  className="btn btn-sm btn-warning me-2"
-                  onClick={() => handleEdit(plan)}
-                >
-                  Edit
-                </button>
-
-                <button
-                  className="btn btn-sm btn-danger"
-                  onClick={() => handleDelete(plan.id)}
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-
-          {studyPlans.length === 0 && (
-            <tr>
-              <td colSpan="5" className="text-center">
-                No study plans found.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-
-      {selectedPlanTitle && (
-        <div className="card mt-4">
-          <div className="card-body">
-            <h5>Tasks in plan: {selectedPlanTitle}</h5>
-
-            {planTasks.length === 0 ? (
-              <p>No tasks in this study plan.</p>
-            ) : (
-              <table className="table table-sm table-striped mt-3">
-                <thead>
-                  <tr>
-                    <th>Title</th>
-                    <th>Subject</th>
-                    <th>Status</th>
-                    <th>Priority</th>
-                    <th>Deadline</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {planTasks.map(task => (
-                    <tr key={task.id}>
-                      <td>{task.title}</td>
-                      <td>{task.subjectName}</td>
-                      <td>{getStatusLabel(task.status)}</td>
-                      <td>{getPriorityLabel(task.priority)}</td>
-                      <td>{task.deadline ? new Date(task.deadline).toLocaleString() : '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-      )}
-      
     </div>
   )
 }

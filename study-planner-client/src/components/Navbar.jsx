@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { logout } from '../services/authService'
 
 function Navbar() {
@@ -18,11 +18,46 @@ function Navbar() {
         </Link>
 
         <div className="navbar-nav me-auto">
-          <Link className="nav-link" to="/dashboard">Dashboard</Link>
-          <Link className="nav-link" to="/subjects">Subjects</Link>
-          <Link className="nav-link" to="/exams">Exams</Link>
-          <Link className="nav-link" to="/tasks">Tasks</Link>
-          <Link className="nav-link" to="/studyplans">Study Plans</Link>
+          <NavLink
+            to="/dashboard"
+            className={({ isActive }) =>
+                isActive ? 'nav-link active-nav-link' : 'nav-link'
+            }
+            >
+            Dashboard
+          </NavLink>
+          <NavLink
+            to="/subjects"
+            className={({ isActive }) =>
+                isActive ? 'nav-link active-nav-link' : 'nav-link'
+            }
+            >
+            Subjects
+          </NavLink>
+          <NavLink
+            to="/exams"
+            className={({ isActive }) =>
+                isActive ? 'nav-link active-nav-link' : 'nav-link'
+            }
+            >
+            Exams
+          </NavLink>
+          <NavLink
+            to="/tasks"
+            className={({ isActive }) =>
+                isActive ? 'nav-link active-nav-link' : 'nav-link'
+            }
+            >
+            Tasks
+          </NavLink>
+          <NavLink
+            to="/studyplans"
+            className={({ isActive }) =>
+                isActive ? 'nav-link active-nav-link' : 'nav-link'
+            }
+            >
+            Study Plans
+          </NavLink>
         </div>
 
         <span className="navbar-text me-3">{email}</span>

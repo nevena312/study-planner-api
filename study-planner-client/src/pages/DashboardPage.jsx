@@ -2,31 +2,32 @@ import { useEffect, useState } from 'react'
 import { getDashboard } from '../services/dashboardService'
 import { Link } from 'react-router-dom'
 import { getUpcomingExams } from '../services/examService'
+import { getPendingTasks } from '../services/taskService'
 
 function DashboardPage() {
   const [dashboard, setDashboard] = useState(null)
   const [error, setError] = useState('')
 
   const [upcomingExams, setUpcomingExams] = useState([])
+  const [pendingTasks, setPendingTasks] = useState([])
 
-  useEffect(() => {
+    useEffect(() => {
     const loadDashboard = async () => {
-      try {
-        const data = await getDashboard()
-        setDashboard(data)
-
+        try {
         const dashboardData = await getDashboard()
         const examsData = await getUpcomingExams()
+        const tasksData = await getPendingTasks()
 
         setDashboard(dashboardData)
         setUpcomingExams(examsData)
-      } catch {
+        setPendingTasks(tasksData)
+        } catch {
         setError('Failed to load dashboard.')
-      }
+        }
     }
 
     loadDashboard()
-  }, [])
+    }, [])
 
   if (error) {
     return <div className="container mt-4 alert alert-danger">{error}</div>
@@ -64,7 +65,7 @@ function DashboardPage() {
         </div>
 
         <div className="col-md-3 mb-3">
-            <Link to="/tasks" className="dashboard-card-link">
+            <Link to="/tasks?status=pending" className="dashboard-card-link">
             <div className="card dashboard-card">
                 <div className="card-body">
                 <h5>Pending tasks</h5>
@@ -75,7 +76,7 @@ function DashboardPage() {
         </div>
 
         <div className="col-md-3 mb-3">
-            <Link to="/tasks" className="dashboard-card-link">
+            <Link to="/tasks?status=completed" className="dashboard-card-link">
             <div className="card dashboard-card">
                 <div className="card-body">
                 <h5>Completed tasks</h5>
@@ -139,6 +140,39 @@ function DashboardPage() {
             )}
         </div>
       </div>
+
+      <div className="card mt-4">
+        <div className="card-body">
+            <h5>Pending tasks</h5>
+
+            {pendingTasks.length === 0 ? (
+            <p className="mb-0">No pending tasks.</p>
+            ) : (
+            <table className="table table-sm table-striped mt-3">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Subject</th>
+                  <th>Priority</th>
+                  <th>Deadline</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {pendingTasks.map(task => (
+                  <tr key={task.id}>
+                    <td>{task.title}</td>
+                    <td>{task.subjectName}</td>
+                    <td>{task.priority === 1 ? 'Low' : task.priority === 2 ? 'Medium' : 'High'}</td>
+                    <td>{task.deadline ? new Date(task.deadline).toLocaleString() : '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+
     </div>
   )
 }

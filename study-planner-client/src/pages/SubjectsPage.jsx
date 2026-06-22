@@ -90,7 +90,53 @@ function SubjectsPage() {
 
       {error && <div className="alert alert-danger">{error}</div>}
 
-      <form onSubmit={handleSubmit} className="card card-body mb-4">
+      <div className="card">
+        <div className="card-body">
+          <table className="table table-striped">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th style={{ width: '180px' }}>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {subjects.map(subject => (
+                <tr key={subject.id}>
+                  <td>{subject.name}</td>
+                  <td>{subject.description}</td>
+                  <td>
+                    <button
+                      className="btn btn-sm btn-warning me-2"
+                      onClick={() => handleEdit(subject)}
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      className="btn btn-sm btn-danger"
+                      onClick={() => handleDelete(subject.id)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+
+              {subjects.length === 0 && (
+                <tr>
+                  <td colSpan="3" className="text-center">
+                    No subjects found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="card card-body mb-4 mt-4">
         <h5>{editingId ? 'Edit subject' : 'Add subject'}</h5>
 
         <div className="mb-3">
@@ -127,48 +173,7 @@ function SubjectsPage() {
           )}
         </div>
       </form>
-
-      <table className="table table-striped">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Description</th>
-            <th style={{ width: '180px' }}>Actions</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {subjects.map(subject => (
-            <tr key={subject.id}>
-              <td>{subject.name}</td>
-              <td>{subject.description}</td>
-              <td>
-                <button
-                  className="btn btn-sm btn-warning me-2"
-                  onClick={() => handleEdit(subject)}
-                >
-                  Edit
-                </button>
-
-                <button
-                  className="btn btn-sm btn-danger"
-                  onClick={() => handleDelete(subject.id)}
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-
-          {subjects.length === 0 && (
-            <tr>
-              <td colSpan="3" className="text-center">
-                No subjects found.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            
     </div>
   )
 }

@@ -124,7 +124,57 @@ function ExamsPage() {
 
       {error && <div className="alert alert-danger">{error}</div>}
 
-      <form onSubmit={handleSubmit} className="card card-body mb-4">
+      <div className="card">
+        <div className="card-body">
+            <table className="table table-striped">
+                <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Subject</th>
+                    <th style={{ width: '180px' }}>Actions</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                {exams.map(exam => (
+                    <tr key={exam.id}>
+                    <td>{exam.title}</td>
+                    <td>{new Date(exam.examDate).toLocaleString()}</td>
+                    <td>{getExamTypeLabel(exam.type)}</td>
+                    <td>{exam.subjectName}</td>
+                    <td>
+                        <button
+                        className="btn btn-sm btn-warning me-2"
+                        onClick={() => handleEdit(exam)}
+                        >
+                        Edit
+                        </button>
+
+                        <button
+                        className="btn btn-sm btn-danger"
+                        onClick={() => handleDelete(exam.id)}
+                        >
+                        Delete
+                        </button>
+                    </td>
+                    </tr>
+                ))}
+
+                {exams.length === 0 && (
+                    <tr>
+                    <td colSpan="5" className="text-center">
+                        No exams found.
+                    </td>
+                    </tr>
+                )}
+                </tbody>
+            </table>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="card card-body mb-4 mt-4">
         <h5>{editingId ? 'Edit exam' : 'Add exam'}</h5>
 
         <div className="mb-3">
@@ -206,51 +256,6 @@ function ExamsPage() {
         )}
       </form>
 
-      <table className="table table-striped">
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Date</th>
-            <th>Type</th>
-            <th>Subject</th>
-            <th style={{ width: '180px' }}>Actions</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {exams.map(exam => (
-            <tr key={exam.id}>
-              <td>{exam.title}</td>
-              <td>{new Date(exam.examDate).toLocaleString()}</td>
-              <td>{getExamTypeLabel(exam.type)}</td>
-              <td>{exam.subjectName}</td>
-              <td>
-                <button
-                  className="btn btn-sm btn-warning me-2"
-                  onClick={() => handleEdit(exam)}
-                >
-                  Edit
-                </button>
-
-                <button
-                  className="btn btn-sm btn-danger"
-                  onClick={() => handleDelete(exam.id)}
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-
-          {exams.length === 0 && (
-            <tr>
-              <td colSpan="5" className="text-center">
-                No exams found.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
     </div>
   )
 }
