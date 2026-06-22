@@ -1,8 +1,8 @@
 ﻿using StudyPlanner.Api.Enums;
 
-namespace StudyPlanner.Api.Models;
+namespace StudyPlanner.Api.DTOs.StudyTasks;
 
-public class StudyTask
+public class StudyTaskReadDto
 {
     public int Id { get; set; }
 
@@ -16,8 +16,8 @@ public class StudyTask
     public int EstimatedDurationMinutes { get; set; }
 
     public int SubjectId { get; set; }
-    public Subject Subject { get; set; } = null!;
+    public string SubjectName { get; set; } = string.Empty;
 
     public int? StudyPlanId { get; set; }
-    public StudyPlan? StudyPlan { get; set; }
+    public string? StudyPlanTitle { get; set; }
 }
