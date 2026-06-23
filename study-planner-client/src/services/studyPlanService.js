@@ -17,3 +17,8 @@ export const updateStudyPlan = async (id, studyPlan) => {
 export const deleteStudyPlan = async (id) => {
   await axiosClient.delete(`/studyplans/${id}`)
 }
+
+export const generateStudyPlan = async (studyPlan) => {
+  const response = await axiosClient.post('/studyplans/generate', studyPlan)
+  return response.data
+}

@@ -175,6 +175,30 @@ public class StudyPlannerApiService
         return await response.Content.ReadFromJsonAsync<StudyPlanResponse>();
     }
 
+    public async Task<StudyPlanResponse?> GenerateStudyPlanAsync(
+    GenerateStudyPlanRequest request)
+    {
+        EnsureLoggedIn();
+
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _authState.Token);
+
+        request.StartDate = EnsureUtc(request.StartDate);
+        request.EndDate = EnsureUtc(request.EndDate);
+
+        var response =
+            await _httpClient.PostAsJsonAsync(
+                "studyplans/generate",
+                request);
+
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException(
+                "Failed to generate study plan.");
+
+        return await response.Content
+            .ReadFromJsonAsync<StudyPlanResponse>();
+    }
+
     private static DateTime EnsureUtc(DateTime dateTime)
     {
         return dateTime.Kind switch

@@ -85,6 +85,42 @@ public class StudyPlanTools
         }
     }
 
+    [McpServerTool,
+ Description(
+ "Generate a study plan automatically from pending tasks.")]
+    public async Task<string> GenerateStudyPlan(
+    string title,
+    DateTime startDate,
+    DateTime endDate,
+    string? description = null)
+    {
+        try
+        {
+            var request = new GenerateStudyPlanRequest
+            {
+                Title = title,
+                StartDate = startDate,
+                EndDate = endDate,
+                Description = description
+            };
+
+            var plan =
+                await _apiService.GenerateStudyPlanAsync(request);
+
+            if (plan == null)
+                return "Study plan generation failed.";
+
+            return
+                $"Generated study plan: {plan.Title}\n" +
+                $"ID: {plan.Id}\n" +
+                $"Tasks assigned: {plan.TaskCount}";
+        }
+        catch (InvalidOperationException ex)
+        {
+            return ex.Message;
+        }
+    }
+
     private static string FormatStatus(int status)
     {
         return status switch

@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using StudyPlanner.Api.Data;
 using StudyPlanner.Api.DTOs.StudyPlans;
 using StudyPlanner.Api.Models;
+using StudyPlanner.Api.Enums;
 
 namespace StudyPlanner.Api.Controllers;
 
@@ -70,6 +71,61 @@ public class StudyPlansController : ControllerBase
             return NotFound();
 
         return Ok(plan);
+    }
+
+    [HttpPost("generate")]
+    public async Task<ActionResult<StudyPlanReadDto>> Generate(StudyPlanGenerateDto dto)
+    {
+        var userId = GetCurrentUserId();
+
+        if (dto.EndDate <= dto.StartDate)
+            return BadRequest("End date must be after start date.");
+
+        var pendingTasks = await _context.StudyTasks
+            .Include(t => t.Subject)
+            .Where(t => t.Subject.UserId == userId &&
+                        t.Status != StudyTaskStatus.Completed &&
+                        t.StudyPlanId == null)
+            .OrderBy(t => t.Deadline == null)
+            .ThenBy(t => t.Deadline)
+            .ThenByDescending(t => t.Priority)
+            .ToListAsync();
+
+        if (!pendingTasks.Any())
+            return BadRequest("There are no pending tasks to generate a study plan.");
+
+        var plan = new StudyPlan
+        {
+            Title = dto.Title,
+            StartDate = dto.StartDate,
+            EndDate = dto.EndDate,
+            Description = dto.Description,
+            CreatedAt = DateTime.UtcNow,
+            UserId = userId
+        };
+
+        _context.StudyPlans.Add(plan);
+        await _context.SaveChangesAsync();
+
+        foreach (var task in pendingTasks)
+        {
+            task.StudyPlanId = plan.Id;
+        }
+
+        await _context.SaveChangesAsync();
+
+        var result = new StudyPlanReadDto
+        {
+            Id = plan.Id,
+            Title = plan.Title,
+            StartDate = plan.StartDate,
+            EndDate = plan.EndDate,
+            Description = plan.Description,
+            CreatedAt = plan.CreatedAt,
+            TaskCount = pendingTasks.Count
+        };
+
+        return CreatedAtAction(nameof(GetById), new { id = plan.Id }, result);
     }
 
     [HttpPost]

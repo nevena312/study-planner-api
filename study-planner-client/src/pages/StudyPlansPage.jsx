@@ -3,7 +3,8 @@ import {
   getStudyPlans,
   createStudyPlan,
   updateStudyPlan,
-  deleteStudyPlan
+  deleteStudyPlan,
+  generateStudyPlan
 } from '../services/studyPlanService'
 import { getTasksByPlan } from '../services/taskService'
 
@@ -82,6 +83,25 @@ function StudyPlansPage() {
       await loadStudyPlans()
     } catch {
       setError('Failed to save study plan.')
+    }
+  }
+
+  const handleGenerate = async () => {
+    setError('')
+
+    if (!formData.title || !formData.startDate || !formData.endDate) {
+      setError('Title, start date and end date are required for generating a plan.')
+      return
+    }
+
+    try {
+      const payload = buildPayload()
+      await generateStudyPlan(payload)
+
+      resetForm()
+      await loadStudyPlans()
+    } catch {
+      setError('Failed to generate study plan. Make sure there are pending tasks without a study plan.')
     }
   }
 
@@ -275,15 +295,31 @@ function StudyPlansPage() {
           />
         </div>
 
-        <button type="submit" className="btn btn-primary me-2">
-          {editingId ? 'Update' : 'Create'}
-        </button>
-
-        {editingId && (
-          <button type="button" className="btn btn-secondary mt-2" onClick={resetForm}>
-            Cancel
+        <div>
+          <button type="submit" className="btn btn-primary me-2">
+            {editingId ? 'Update' : 'Create'}
           </button>
-        )}
+
+          {!editingId && (
+            <button
+              type="button"
+              className="btn btn-info me-2"
+              onClick={handleGenerate}
+            >
+              Generate from pending tasks
+            </button>
+          )}
+
+          {editingId && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={resetForm}
+            >
+              Cancel
+            </button>
+          )}
+        </div>
       </form>
 
     </div>
