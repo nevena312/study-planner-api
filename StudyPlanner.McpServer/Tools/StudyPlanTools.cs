@@ -1,6 +1,7 @@
-﻿using System.ComponentModel;
-using ModelContextProtocol.Server;
+﻿using ModelContextProtocol.Server;
+using StudyPlanner.McpServer.Models;
 using StudyPlanner.McpServer.Services;
+using System.ComponentModel;
 
 namespace StudyPlanner.McpServer.Tools;
 
@@ -54,6 +55,36 @@ public class StudyPlanTools
         }
     }
 
+    [McpServerTool, Description("Create a new study plan.")]
+    public async Task<string> CreateStudyPlan(
+        string title,
+        DateTime startDate,
+        DateTime endDate,
+        string? description = null)
+    {
+        try
+        {
+            var request = new CreateStudyPlanRequest
+            {
+                Title = title,
+                StartDate = startDate,
+                EndDate = endDate,
+                Description = description
+            };
+
+            var plan = await _apiService.CreateStudyPlanAsync(request);
+
+            if (plan == null)
+                return "Study plan was created, but response data could not be loaded.";
+
+            return $"Study plan created: {plan.Id}: {plan.Title} | {plan.StartDate:g} - {plan.EndDate:g}";
+        }
+        catch (InvalidOperationException ex)
+        {
+            return ex.Message;
+        }
+    }
+
     private static string FormatStatus(int status)
     {
         return status switch
@@ -64,7 +95,6 @@ public class StudyPlanTools
             _ => "Unknown"
         };
     }
-
     private static string FormatPriority(int priority)
     {
         return priority switch

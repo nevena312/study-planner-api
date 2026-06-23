@@ -1,6 +1,7 @@
-﻿using System.ComponentModel;
-using ModelContextProtocol.Server;
+﻿using ModelContextProtocol.Server;
+using StudyPlanner.McpServer.Models;
 using StudyPlanner.McpServer.Services;
+using System.ComponentModel;
 
 namespace StudyPlanner.McpServer.Tools;
 
@@ -27,6 +28,57 @@ public class TaskTools
             return "Pending study tasks:\n" + string.Join("\n", tasks.Select(t =>
                 $"- {t.Title} ({t.SubjectName}) | Priority: {FormatPriority(t.Priority)} | Deadline: {(t.Deadline.HasValue ? t.Deadline.Value.ToString("g") : "No deadline")}"
             ));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return ex.Message;
+        }
+    }
+
+    [McpServerTool, Description("Mark a study task as completed by task ID.")]
+    public async Task<string> CompleteTask(int taskId)
+    {
+        try
+        {
+            await _apiService.CompleteTaskAsync(taskId);
+            return $"Task with ID {taskId} has been marked as completed.";
+        }
+        catch (InvalidOperationException ex)
+        {
+            return ex.Message;
+        }
+    }
+
+    [McpServerTool, Description("Create a new study task.")]
+    public async Task<string> CreateTask(
+    string title,
+    int subjectId,
+    string? description = null,
+    int priority = 2,
+    DateTime? deadline = null,
+    int estimatedDurationMinutes = 60,
+    int? studyPlanId = null)
+    {
+        try
+        {
+            var request = new CreateStudyTaskRequest
+            {
+                Title = title,
+                Description = description,
+                Status = 1,
+                Priority = priority,
+                Deadline = deadline,
+                EstimatedDurationMinutes = estimatedDurationMinutes,
+                SubjectId = subjectId,
+                StudyPlanId = studyPlanId
+            };
+
+            var task = await _apiService.CreateTaskAsync(request);
+
+            if (task == null)
+                return "Task was created, but response data could not be loaded.";
+
+            return $"Task created: {task.Id}: {task.Title} ({task.SubjectName})";
         }
         catch (InvalidOperationException ex)
         {
