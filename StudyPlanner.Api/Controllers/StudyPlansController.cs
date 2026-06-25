@@ -1,11 +1,15 @@
 ﻿using System.Security.Claims;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using StudyPlanner.Api.Data;
 using StudyPlanner.Api.DTOs.StudyPlans;
-using StudyPlanner.Api.Models;
-using StudyPlanner.Api.Enums;
+
+using StudyPlanner.Api.Features.StudyPlans.GetStudyPlans;
+using StudyPlanner.Api.Features.StudyPlans.GetStudyPlanById;
+using StudyPlanner.Api.Features.StudyPlans.CreateStudyPlan;
+using StudyPlanner.Api.Features.StudyPlans.UpdateStudyPlan;
+using StudyPlanner.Api.Features.StudyPlans.DeleteStudyPlan;
+using StudyPlanner.Api.Features.StudyPlans.GenerateStudyPlan;
 
 namespace StudyPlanner.Api.Controllers;
 
@@ -14,11 +18,11 @@ namespace StudyPlanner.Api.Controllers;
 [Authorize]
 public class StudyPlansController : ControllerBase
 {
-    private readonly StudyPlannerDbContext _context;
+    private readonly IMediator _mediator;
 
-    public StudyPlansController(StudyPlannerDbContext context)
+    public StudyPlansController(IMediator mediator)
     {
-        _context = context;
+        _mediator = mediator;
     }
 
     private int GetCurrentUserId()
@@ -29,154 +33,78 @@ public class StudyPlansController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<StudyPlanReadDto>>> GetAll()
     {
-        var userId = GetCurrentUserId();
+        var result = await _mediator.Send(
+            new GetStudyPlansQuery(GetCurrentUserId()));
 
-        var plans = await _context.StudyPlans
-            .Where(sp => sp.UserId == userId)
-            .Select(sp => new StudyPlanReadDto
-            {
-                Id = sp.Id,
-                Title = sp.Title,
-                StartDate = sp.StartDate,
-                EndDate = sp.EndDate,
-                Description = sp.Description,
-                CreatedAt = sp.CreatedAt,
-                TaskCount = sp.StudyTasks.Count
-            })
-            .ToListAsync();
-
-        return Ok(plans);
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<StudyPlanReadDto>> GetById(int id)
     {
-        var userId = GetCurrentUserId();
+        var result = await _mediator.Send(
+            new GetStudyPlanByIdQuery(id, GetCurrentUserId()));
 
-        var plan = await _context.StudyPlans
-            .Where(sp => sp.Id == id && sp.UserId == userId)
-            .Select(sp => new StudyPlanReadDto
-            {
-                Id = sp.Id,
-                Title = sp.Title,
-                StartDate = sp.StartDate,
-                EndDate = sp.EndDate,
-                Description = sp.Description,
-                CreatedAt = sp.CreatedAt,
-                TaskCount = sp.StudyTasks.Count
-            })
-            .FirstOrDefaultAsync();
-
-        if (plan == null)
+        if (result == null)
             return NotFound();
 
-        return Ok(plan);
-    }
-
-    [HttpPost("generate")]
-    public async Task<ActionResult<StudyPlanReadDto>> Generate(StudyPlanGenerateDto dto)
-    {
-        var userId = GetCurrentUserId();
-
-        if (dto.EndDate <= dto.StartDate)
-            return BadRequest("End date must be after start date.");
-
-        var pendingTasks = await _context.StudyTasks
-            .Include(t => t.Subject)
-            .Where(t => t.Subject.UserId == userId &&
-                        t.Status != StudyTaskStatus.Completed &&
-                        t.StudyPlanId == null)
-            .OrderBy(t => t.Deadline == null)
-            .ThenBy(t => t.Deadline)
-            .ThenByDescending(t => t.Priority)
-            .ToListAsync();
-
-        if (!pendingTasks.Any())
-            return BadRequest("There are no pending tasks to generate a study plan.");
-
-        var plan = new StudyPlan
-        {
-            Title = dto.Title,
-            StartDate = dto.StartDate,
-            EndDate = dto.EndDate,
-            Description = dto.Description,
-            CreatedAt = DateTime.UtcNow,
-            UserId = userId
-        };
-
-        _context.StudyPlans.Add(plan);
-        await _context.SaveChangesAsync();
-
-        foreach (var task in pendingTasks)
-        {
-            task.StudyPlanId = plan.Id;
-        }
-
-        await _context.SaveChangesAsync();
-
-        var result = new StudyPlanReadDto
-        {
-            Id = plan.Id,
-            Title = plan.Title,
-            StartDate = plan.StartDate,
-            EndDate = plan.EndDate,
-            Description = plan.Description,
-            CreatedAt = plan.CreatedAt,
-            TaskCount = pendingTasks.Count
-        };
-
-        return CreatedAtAction(nameof(GetById), new { id = plan.Id }, result);
+        return Ok(result);
     }
 
     [HttpPost]
     public async Task<ActionResult<StudyPlanReadDto>> Create(StudyPlanCreateDto dto)
     {
-        var userId = GetCurrentUserId();
+        var command = new CreateStudyPlanCommand(
+            dto.Title,
+            dto.StartDate,
+            dto.EndDate,
+            dto.Description,
+            GetCurrentUserId());
 
-        var plan = new StudyPlan
-        {
-            Title = dto.Title,
-            StartDate = dto.StartDate,
-            EndDate = dto.EndDate,
-            Description = dto.Description,
-            CreatedAt = DateTime.UtcNow,
-            UserId = userId
-        };
+        var result = await _mediator.Send(command);
 
-        _context.StudyPlans.Add(plan);
-        await _context.SaveChangesAsync();
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = result.Id },
+            result);
+    }
 
-        var result = new StudyPlanReadDto
-        {
-            Id = plan.Id,
-            Title = plan.Title,
-            StartDate = plan.StartDate,
-            EndDate = plan.EndDate,
-            Description = plan.Description,
-            CreatedAt = plan.CreatedAt,
-            TaskCount = 0
-        };
+    [HttpPost("generate")]
+    public async Task<ActionResult<StudyPlanReadDto>> Generate(StudyPlanGenerateDto dto)
+    {
+        var command = new GenerateStudyPlanCommand(
+            dto.Title,
+            dto.StartDate,
+            dto.EndDate,
+            dto.Description,
+            GetCurrentUserId());
 
-        return CreatedAtAction(nameof(GetById), new { id = plan.Id }, result);
+        var result = await _mediator.Send(command);
+
+        if (result == null)
+            return BadRequest("Study plan could not be generated. Check dates or pending tasks without a study plan.");
+
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = result.Id },
+            result);
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, StudyPlanUpdateDto dto)
     {
-        var userId = GetCurrentUserId();
+        var command = new UpdateStudyPlanCommand(
+            id,
+            dto.Title,
+            dto.StartDate,
+            dto.EndDate,
+            dto.Description,
+            GetCurrentUserId());
 
-        var plan = await _context.StudyPlans
-            .FirstOrDefaultAsync(sp => sp.Id == id && sp.UserId == userId);
+        var success = await _mediator.Send(command);
 
-        if (plan == null)
+        if (!success)
             return NotFound();
-
-        plan.Title = dto.Title;
-        plan.StartDate = dto.StartDate;
-        plan.EndDate = dto.EndDate;
-        plan.Description = dto.Description;
-
-        await _context.SaveChangesAsync();
 
         return NoContent();
     }
@@ -184,16 +112,14 @@ public class StudyPlansController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var userId = GetCurrentUserId();
+        var command = new DeleteStudyPlanCommand(
+            id,
+            GetCurrentUserId());
 
-        var plan = await _context.StudyPlans
-            .FirstOrDefaultAsync(sp => sp.Id == id && sp.UserId == userId);
+        var success = await _mediator.Send(command);
 
-        if (plan == null)
+        if (!success)
             return NotFound();
-
-        _context.StudyPlans.Remove(plan);
-        await _context.SaveChangesAsync();
 
         return NoContent();
     }

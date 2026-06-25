@@ -1,10 +1,15 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using StudyPlanner.Api.Data;
 using StudyPlanner.Api.DTOs.Exams;
-using StudyPlanner.Api.Models;
+
+using MediatR;
+using StudyPlanner.Api.Features.Exams.GetExams;
+using StudyPlanner.Api.Features.Exams.GetExamById;
+using StudyPlanner.Api.Features.Exams.GetUpcomingExams;
+using StudyPlanner.Api.Features.Exams.CreateExam;
+using StudyPlanner.Api.Features.Exams.UpdateExam;
+using StudyPlanner.Api.Features.Exams.DeleteExam;
 
 namespace StudyPlanner.Api.Controllers;
 
@@ -13,11 +18,11 @@ namespace StudyPlanner.Api.Controllers;
 [Authorize]
 public class ExamsController : ControllerBase
 {
-    private readonly StudyPlannerDbContext _context;
+    private readonly IMediator _mediator;
 
-    public ExamsController(StudyPlannerDbContext context)
+    public ExamsController(IMediator mediator)
     {
-        _context = context;
+        _mediator = mediator;
     }
 
     private int GetCurrentUserId()
@@ -28,139 +33,71 @@ public class ExamsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<ExamReadDto>>> GetAll()
     {
-        var userId = GetCurrentUserId();
+        var result = await _mediator.Send(
+            new GetExamsQuery(GetCurrentUserId()));
 
-        var exams = await _context.Exams
-            .Include(e => e.Subject)
-            .Where(e => e.Subject.UserId == userId)
-            .Select(e => new ExamReadDto
-            {
-                Id = e.Id,
-                Title = e.Title,
-                ExamDate = e.ExamDate,
-                Description = e.Description,
-                Type = e.Type,
-                SubjectId = e.SubjectId,
-                SubjectName = e.Subject.Name
-            })
-            .ToListAsync();
-
-        return Ok(exams);
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<ExamReadDto>> GetById(int id)
     {
-        var userId = GetCurrentUserId();
+        var result = await _mediator.Send(
+            new GetExamByIdQuery(id, GetCurrentUserId()));
 
-        var exam = await _context.Exams
-            .Include(e => e.Subject)
-            .Where(e => e.Id == id && e.Subject.UserId == userId)
-            .Select(e => new ExamReadDto
-            {
-                Id = e.Id,
-                Title = e.Title,
-                ExamDate = e.ExamDate,
-                Description = e.Description,
-                Type = e.Type,
-                SubjectId = e.SubjectId,
-                SubjectName = e.Subject.Name
-            })
-            .FirstOrDefaultAsync();
-
-        if (exam == null)
+        if (result == null)
             return NotFound();
 
-        return Ok(exam);
+        return Ok(result);
     }
 
     [HttpGet("upcoming")]
     public async Task<ActionResult<List<ExamReadDto>>> GetUpcoming()
     {
-        var userId = GetCurrentUserId();
-        var now = DateTime.UtcNow;
+        var result = await _mediator.Send(
+            new GetUpcomingExamsQuery(GetCurrentUserId()));
 
-        var exams = await _context.Exams
-            .Include(e => e.Subject)
-            .Where(e => e.Subject.UserId == userId && e.ExamDate >= now)
-            .OrderBy(e => e.ExamDate)
-            .Select(e => new ExamReadDto
-            {
-                Id = e.Id,
-                Title = e.Title,
-                ExamDate = e.ExamDate,
-                Description = e.Description,
-                Type = e.Type,
-                SubjectId = e.SubjectId,
-                SubjectName = e.Subject.Name
-            })
-            .ToListAsync();
-
-        return Ok(exams);
+        return Ok(result);
     }
 
     [HttpPost]
     public async Task<ActionResult<ExamReadDto>> Create(ExamCreateDto dto)
     {
-        var userId = GetCurrentUserId();
+        var command = new CreateExamCommand(
+            dto.Title,
+            dto.ExamDate,
+            dto.Description,
+            dto.Type,
+            dto.SubjectId,
+            GetCurrentUserId());
 
-        var subject = await _context.Subjects
-            .FirstOrDefaultAsync(s => s.Id == dto.SubjectId && s.UserId == userId);
+        var result = await _mediator.Send(command);
 
-        if (subject == null)
+        if (result == null)
             return BadRequest("Subject does not exist or does not belong to current user.");
 
-        var exam = new Exam
-        {
-            Title = dto.Title,
-            ExamDate = dto.ExamDate,
-            Description = dto.Description,
-            Type = dto.Type,
-            SubjectId = dto.SubjectId
-        };
-
-        _context.Exams.Add(exam);
-        await _context.SaveChangesAsync();
-
-        var result = new ExamReadDto
-        {
-            Id = exam.Id,
-            Title = exam.Title,
-            ExamDate = exam.ExamDate,
-            Description = exam.Description,
-            Type = exam.Type,
-            SubjectId = exam.SubjectId,
-            SubjectName = subject.Name
-        };
-
-        return CreatedAtAction(nameof(GetById), new { id = exam.Id }, result);
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = result.Id },
+            result);
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, ExamUpdateDto dto)
     {
-        var userId = GetCurrentUserId();
+        var command = new UpdateExamCommand(
+            id,
+            dto.Title,
+            dto.ExamDate,
+            dto.Description,
+            dto.Type,
+            dto.SubjectId,
+            GetCurrentUserId());
 
-        var exam = await _context.Exams
-            .Include(e => e.Subject)
-            .FirstOrDefaultAsync(e => e.Id == id && e.Subject.UserId == userId);
+        var success = await _mediator.Send(command);
 
-        if (exam == null)
+        if (!success)
             return NotFound();
-
-        var newSubject = await _context.Subjects
-            .FirstOrDefaultAsync(s => s.Id == dto.SubjectId && s.UserId == userId);
-
-        if (newSubject == null)
-            return BadRequest("Subject does not exist or does not belong to current user.");
-
-        exam.Title = dto.Title;
-        exam.ExamDate = dto.ExamDate;
-        exam.Description = dto.Description;
-        exam.Type = dto.Type;
-        exam.SubjectId = dto.SubjectId;
-
-        await _context.SaveChangesAsync();
 
         return NoContent();
     }
@@ -168,17 +105,14 @@ public class ExamsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var userId = GetCurrentUserId();
+        var command = new DeleteExamCommand(
+            id,
+            GetCurrentUserId());
 
-        var exam = await _context.Exams
-            .Include(e => e.Subject)
-            .FirstOrDefaultAsync(e => e.Id == id && e.Subject.UserId == userId);
+        var success = await _mediator.Send(command);
 
-        if (exam == null)
+        if (!success)
             return NotFound();
-
-        _context.Exams.Remove(exam);
-        await _context.SaveChangesAsync();
 
         return NoContent();
     }

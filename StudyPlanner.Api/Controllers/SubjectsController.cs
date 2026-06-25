@@ -6,6 +6,13 @@ using StudyPlanner.Api.Data;
 using StudyPlanner.Api.DTOs.Subjects;
 using StudyPlanner.Api.Models;
 
+using MediatR;
+using StudyPlanner.Api.Features.Subjects.GetSubjects;
+using StudyPlanner.Api.Features.Subjects.GetSubjectById;
+using StudyPlanner.Api.Features.Subjects.CreateSubject;
+using StudyPlanner.Api.Features.Subjects.UpdateSubject;
+using StudyPlanner.Api.Features.Subjects.DeleteSubject;
+
 namespace StudyPlanner.Api.Controllers;
 
 [ApiController]
@@ -13,11 +20,11 @@ namespace StudyPlanner.Api.Controllers;
 [Authorize]
 public class SubjectsController : ControllerBase
 {
-    private readonly StudyPlannerDbContext _context;
+    private readonly IMediator _mediator;
 
-    public SubjectsController(StudyPlannerDbContext context)
+    public SubjectsController(IMediator mediator)
     {
-        _context = context;
+        _mediator = mediator;
     }
 
     private int GetCurrentUserId()
@@ -28,82 +35,53 @@ public class SubjectsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<SubjectReadDto>>> GetAll()
     {
-        var userId = GetCurrentUserId();
+        var result = await _mediator.Send(
+            new GetSubjectsQuery(GetCurrentUserId()));
 
-        var subjects = await _context.Subjects
-            .Where(s => s.UserId == userId)
-            .Select(s => new SubjectReadDto
-            {
-                Id = s.Id,
-                Name = s.Name,
-                Description = s.Description
-            })
-            .ToListAsync();
-
-        return Ok(subjects);
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<SubjectReadDto>> GetById(int id)
     {
-        var userId = GetCurrentUserId();
+        var result = await _mediator.Send(
+            new GetSubjectByIdQuery(id, GetCurrentUserId()));
 
-        var subject = await _context.Subjects
-            .Where(s => s.Id == id && s.UserId == userId)
-            .Select(s => new SubjectReadDto
-            {
-                Id = s.Id,
-                Name = s.Name,
-                Description = s.Description
-            })
-            .FirstOrDefaultAsync();
-
-        if (subject == null)
+        if (result == null)
             return NotFound();
 
-        return Ok(subject);
+        return Ok(result);
     }
 
     [HttpPost]
     public async Task<ActionResult<SubjectReadDto>> Create(SubjectCreateDto dto)
     {
-        var userId = GetCurrentUserId();
+        var command = new CreateSubjectCommand(
+            dto.Name,
+            dto.Description,
+            GetCurrentUserId());
 
-        var subject = new Subject
-        {
-            Name = dto.Name,
-            Description = dto.Description,
-            UserId = userId
-        };
+        var result = await _mediator.Send(command);
 
-        _context.Subjects.Add(subject);
-        await _context.SaveChangesAsync();
-
-        var result = new SubjectReadDto
-        {
-            Id = subject.Id,
-            Name = subject.Name,
-            Description = subject.Description
-        };
-
-        return CreatedAtAction(nameof(GetById), new { id = subject.Id }, result);
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = result.Id },
+            result);
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, SubjectUpdateDto dto)
     {
-        var userId = GetCurrentUserId();
+        var command = new UpdateSubjectCommand(
+            id,
+            dto.Name,
+            dto.Description,
+            GetCurrentUserId());
 
-        var subject = await _context.Subjects
-            .FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId);
+        var success = await _mediator.Send(command);
 
-        if (subject == null)
+        if (!success)
             return NotFound();
-
-        subject.Name = dto.Name;
-        subject.Description = dto.Description;
-
-        await _context.SaveChangesAsync();
 
         return NoContent();
     }
@@ -111,16 +89,14 @@ public class SubjectsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var userId = GetCurrentUserId();
+        var command = new DeleteSubjectCommand(
+            id,
+            GetCurrentUserId());
 
-        var subject = await _context.Subjects
-            .FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId);
+        var success = await _mediator.Send(command);
 
-        if (subject == null)
+        if (!success)
             return NotFound();
-
-        _context.Subjects.Remove(subject);
-        await _context.SaveChangesAsync();
 
         return NoContent();
     }

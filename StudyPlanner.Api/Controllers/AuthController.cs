@@ -1,9 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using StudyPlanner.Api.Data;
+﻿using MediatR;
+using Microsoft.AspNetCore.Mvc;
 using StudyPlanner.Api.DTOs.Auth;
-using StudyPlanner.Api.Models;
-using StudyPlanner.Api.Services;
+using StudyPlanner.Api.Features.Auth.Login;
+using StudyPlanner.Api.Features.Auth.Register;
 
 namespace StudyPlanner.Api.Controllers;
 
@@ -11,83 +10,46 @@ namespace StudyPlanner.Api.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    private readonly StudyPlannerDbContext _context;
-    private readonly JwtService _jwtService;
+    private readonly IMediator _mediator;
 
-    public AuthController(StudyPlannerDbContext context, JwtService jwtService)
+    public AuthController(IMediator mediator)
     {
-        _context = context;
-        _jwtService = jwtService;
+        _mediator = mediator;
     }
 
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponseDto>> Register(RegisterDto dto)
     {
-        var emailExists = await _context.Users.AnyAsync(u => u.Email == dto.Email);
+        var result = await _mediator.Send(
+            new RegisterCommand(
+                dto.FirstName,
+                dto.LastName,
+                dto.Email,
+                dto.Password));
 
-        if (emailExists)
-        {
+        if (result == null)
             return BadRequest("User with this email already exists.");
-        }
 
-        var user = new User
-        {
-            FirstName = dto.FirstName,
-            LastName = dto.LastName,
-            Email = dto.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password)
-        };
-
-        try
-        {
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateException)
-        {
-            return BadRequest("User with this email already exists.");
-        }
-
-        var token = _jwtService.GenerateToken(user);
-
-        return Ok(new AuthResponseDto
-        {
-            Token = token,
-            UserId = user.Id,
-            Email = user.Email
-        });
+        return Ok(result);
     }
 
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponseDto>> Login(LoginDto dto)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+        var result = await _mediator.Send(
+            new LoginCommand(
+                dto.Email,
+                dto.Password));
 
-        if (user == null)
-        {
+        if (result == null)
             return Unauthorized("Invalid email or password.");
-        }
 
-        var isPasswordValid = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
-
-        if (!isPasswordValid)
-        {
-            return Unauthorized("Invalid email or password.");
-        }
-
-        var token = _jwtService.GenerateToken(user);
-
-        return Ok(new AuthResponseDto
-        {
-            Token = token,
-            UserId = user.Id,
-            Email = user.Email
-        });
+        return Ok(result);
     }
 
     [HttpPost("logout")]
     public IActionResult Logout()
     {
-        return Ok("Logout is handled on the client by removing the JWT token.");
+        return Ok("Logged out successfully.");
     }
 }

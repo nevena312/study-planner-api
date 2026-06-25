@@ -53,6 +53,27 @@ namespace StudyPlanner.Api.Migrations
                     b.ToTable("Exams");
                 });
 
+            modelBuilder.Entity("StudyPlanner.Api.Models.Student", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Students");
+                });
+
             modelBuilder.Entity("StudyPlanner.Api.Models.StudyPlan", b =>
                 {
                     b.Property<int>("Id")

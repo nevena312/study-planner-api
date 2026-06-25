@@ -15,6 +15,7 @@ public class StudyPlannerDbContext : DbContext
     public DbSet<Exam> Exams { get; set; }
     public DbSet<StudyTask> StudyTasks { get; set; }
     public DbSet<StudyPlan> StudyPlans { get; set; }
+    public DbSet<Student> Students { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

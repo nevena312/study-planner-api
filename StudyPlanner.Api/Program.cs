@@ -4,6 +4,8 @@ using StudyPlanner.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Reflection;
+using StudyPlanner.Api.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,6 +46,17 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 
 builder.Services.AddOpenApi();
+
+
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
+
+builder.Services.AddScoped<ISubjectRepository, SubjectRepository>();
+builder.Services.AddScoped<IExamRepository, ExamRepository>();
+builder.Services.AddScoped<IStudyTaskRepository, StudyTaskRepository>();
+builder.Services.AddScoped<IStudyPlanRepository, StudyPlanRepository>();
+builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 var app = builder.Build();
 

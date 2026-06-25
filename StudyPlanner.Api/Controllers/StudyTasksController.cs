@@ -1,10 +1,18 @@
 ﻿using System.Security.Claims;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using StudyPlanner.Api.Data;
 using StudyPlanner.Api.DTOs.StudyTasks;
-using StudyPlanner.Api.Models;
+
+using StudyPlanner.Api.Features.StudyTasks.GetStudyTasks;
+using StudyPlanner.Api.Features.StudyTasks.GetStudyTaskById;
+using StudyPlanner.Api.Features.StudyTasks.GetPendingTasks;
+using StudyPlanner.Api.Features.StudyTasks.GetTasksBySubject;
+using StudyPlanner.Api.Features.StudyTasks.GetTasksByPlan;
+using StudyPlanner.Api.Features.StudyTasks.CreateStudyTask;
+using StudyPlanner.Api.Features.StudyTasks.UpdateStudyTask;
+using StudyPlanner.Api.Features.StudyTasks.DeleteStudyTask;
+using StudyPlanner.Api.Features.StudyTasks.CompleteStudyTask;
 
 namespace StudyPlanner.Api.Controllers;
 
@@ -13,11 +21,11 @@ namespace StudyPlanner.Api.Controllers;
 [Authorize]
 public class StudyTasksController : ControllerBase
 {
-    private readonly StudyPlannerDbContext _context;
+    private readonly IMediator _mediator;
 
-    public StudyTasksController(StudyPlannerDbContext context)
+    public StudyTasksController(IMediator mediator)
     {
-        _context = context;
+        _mediator = mediator;
     }
 
     private int GetCurrentUserId()
@@ -28,252 +36,110 @@ public class StudyTasksController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<StudyTaskReadDto>>> GetAll()
     {
-        var userId = GetCurrentUserId();
+        var result = await _mediator.Send(
+            new GetStudyTasksQuery(GetCurrentUserId()));
 
-        var tasks = await _context.StudyTasks
-            .Include(t => t.Subject)
-            .Include(t => t.StudyPlan)
-            .Where(t => t.Subject.UserId == userId)
-            .Select(t => new StudyTaskReadDto
-            {
-                Id = t.Id,
-                Title = t.Title,
-                Description = t.Description,
-                Status = t.Status,
-                Priority = t.Priority,
-                Deadline = t.Deadline,
-                EstimatedDurationMinutes = t.EstimatedDurationMinutes,
-                SubjectId = t.SubjectId,
-                SubjectName = t.Subject.Name,
-                StudyPlanId = t.StudyPlanId,
-                StudyPlanTitle = t.StudyPlan != null ? t.StudyPlan.Title : null
-            })
-            .ToListAsync();
-
-        return Ok(tasks);
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<StudyTaskReadDto>> GetById(int id)
     {
-        var userId = GetCurrentUserId();
+        var result = await _mediator.Send(
+            new GetStudyTaskByIdQuery(id, GetCurrentUserId()));
 
-        var task = await _context.StudyTasks
-            .Include(t => t.Subject)
-            .Include(t => t.StudyPlan)
-            .Where(t => t.Id == id && t.Subject.UserId == userId)
-            .Select(t => new StudyTaskReadDto
-            {
-                Id = t.Id,
-                Title = t.Title,
-                Description = t.Description,
-                Status = t.Status,
-                Priority = t.Priority,
-                Deadline = t.Deadline,
-                EstimatedDurationMinutes = t.EstimatedDurationMinutes,
-                SubjectId = t.SubjectId,
-                SubjectName = t.Subject.Name,
-                StudyPlanId = t.StudyPlanId,
-                StudyPlanTitle = t.StudyPlan != null ? t.StudyPlan.Title : null
-            })
-            .FirstOrDefaultAsync();
-
-        if (task == null)
+        if (result == null)
             return NotFound();
 
-        return Ok(task);
+        return Ok(result);
     }
 
     [HttpGet("pending")]
     public async Task<ActionResult<List<StudyTaskReadDto>>> GetPending()
     {
-        var userId = GetCurrentUserId();
+        var result = await _mediator.Send(
+            new GetPendingTasksQuery(GetCurrentUserId()));
 
-        var tasks = await _context.StudyTasks
-            .Include(t => t.Subject)
-            .Include(t => t.StudyPlan)
-            .Where(t => t.Subject.UserId == userId &&
-                        t.Status != StudyPlanner.Api.Enums.StudyTaskStatus.Completed)
-            .OrderBy(t => t.Deadline)
-            .Select(t => new StudyTaskReadDto
-            {
-                Id = t.Id,
-                Title = t.Title,
-                Description = t.Description,
-                Status = t.Status,
-                Priority = t.Priority,
-                Deadline = t.Deadline,
-                EstimatedDurationMinutes = t.EstimatedDurationMinutes,
-                SubjectId = t.SubjectId,
-                SubjectName = t.Subject.Name,
-                StudyPlanId = t.StudyPlanId,
-                StudyPlanTitle = t.StudyPlan != null ? t.StudyPlan.Title : null
-            })
-            .ToListAsync();
-
-        return Ok(tasks);
+        return Ok(result);
     }
 
     [HttpGet("by-subject/{subjectId}")]
     public async Task<ActionResult<List<StudyTaskReadDto>>> GetBySubject(int subjectId)
     {
-        var userId = GetCurrentUserId();
+        var result = await _mediator.Send(
+            new GetTasksBySubjectQuery(subjectId, GetCurrentUserId()));
 
-        var subjectExists = await _context.Subjects
-            .AnyAsync(s => s.Id == subjectId && s.UserId == userId);
-
-        if (!subjectExists)
-            return NotFound("Subject not found.");
-
-        var tasks = await _context.StudyTasks
-            .Include(t => t.Subject)
-            .Include(t => t.StudyPlan)
-            .Where(t => t.SubjectId == subjectId)
-            .Select(t => new StudyTaskReadDto
-            {
-                Id = t.Id,
-                Title = t.Title,
-                Description = t.Description,
-                Status = t.Status,
-                Priority = t.Priority,
-                Deadline = t.Deadline,
-                EstimatedDurationMinutes = t.EstimatedDurationMinutes,
-                SubjectId = t.SubjectId,
-                SubjectName = t.Subject.Name,
-                StudyPlanId = t.StudyPlanId,
-                StudyPlanTitle = t.StudyPlan != null ? t.StudyPlan.Title : null
-            })
-            .ToListAsync();
-
-        return Ok(tasks);
+        return Ok(result);
     }
 
     [HttpGet("by-plan/{planId}")]
     public async Task<ActionResult<List<StudyTaskReadDto>>> GetByPlan(int planId)
     {
-        var userId = GetCurrentUserId();
+        var result = await _mediator.Send(
+            new GetTasksByPlanQuery(planId, GetCurrentUserId()));
 
-        var planExists = await _context.StudyPlans
-            .AnyAsync(p => p.Id == planId && p.UserId == userId);
-
-        if (!planExists)
-            return NotFound("Study plan not found.");
-
-        var tasks = await _context.StudyTasks
-            .Include(t => t.Subject)
-            .Include(t => t.StudyPlan)
-            .Where(t => t.StudyPlanId == planId)
-            .Select(t => new StudyTaskReadDto
-            {
-                Id = t.Id,
-                Title = t.Title,
-                Description = t.Description,
-                Status = t.Status,
-                Priority = t.Priority,
-                Deadline = t.Deadline,
-                EstimatedDurationMinutes = t.EstimatedDurationMinutes,
-                SubjectId = t.SubjectId,
-                SubjectName = t.Subject.Name,
-                StudyPlanId = t.StudyPlanId,
-                StudyPlanTitle = t.StudyPlan != null ? t.StudyPlan.Title : null
-            })
-            .ToListAsync();
-
-        return Ok(tasks);
+        return Ok(result);
     }
 
     [HttpPost]
     public async Task<ActionResult<StudyTaskReadDto>> Create(StudyTaskCreateDto dto)
     {
-        var userId = GetCurrentUserId();
+        var command = new CreateStudyTaskCommand(
+            dto.Title,
+            dto.Description,
+            dto.Status,
+            dto.Priority,
+            dto.Deadline,
+            dto.EstimatedDurationMinutes,
+            dto.SubjectId,
+            dto.StudyPlanId,
+            GetCurrentUserId());
 
-        var subject = await _context.Subjects
-            .FirstOrDefaultAsync(s => s.Id == dto.SubjectId && s.UserId == userId);
+        var result = await _mediator.Send(command);
 
-        if (subject == null)
-            return BadRequest("Subject does not exist or does not belong to current user.");
+        if (result == null)
+            return BadRequest("Subject or study plan does not exist or does not belong to current user.");
 
-        StudyPlan? studyPlan = null;
-
-        if (dto.StudyPlanId != null)
-        {
-            studyPlan = await _context.StudyPlans
-                .FirstOrDefaultAsync(sp => sp.Id == dto.StudyPlanId && sp.UserId == userId);
-
-            if (studyPlan == null)
-                return BadRequest("Study plan does not exist or does not belong to current user.");
-        }
-
-        var task = new StudyTask
-        {
-            Title = dto.Title,
-            Description = dto.Description,
-            Status = dto.Status,
-            Priority = dto.Priority,
-            Deadline = dto.Deadline,
-            EstimatedDurationMinutes = dto.EstimatedDurationMinutes,
-            SubjectId = dto.SubjectId,
-            StudyPlanId = dto.StudyPlanId
-        };
-
-        _context.StudyTasks.Add(task);
-        await _context.SaveChangesAsync();
-
-        var result = new StudyTaskReadDto
-        {
-            Id = task.Id,
-            Title = task.Title,
-            Description = task.Description,
-            Status = task.Status,
-            Priority = task.Priority,
-            Deadline = task.Deadline,
-            EstimatedDurationMinutes = task.EstimatedDurationMinutes,
-            SubjectId = task.SubjectId,
-            SubjectName = subject.Name,
-            StudyPlanId = task.StudyPlanId,
-            StudyPlanTitle = studyPlan?.Title
-        };
-
-        return CreatedAtAction(nameof(GetById), new { id = task.Id }, result);
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = result.Id },
+            result);
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, StudyTaskUpdateDto dto)
     {
-        var userId = GetCurrentUserId();
+        var command = new UpdateStudyTaskCommand(
+            id,
+            dto.Title,
+            dto.Description,
+            dto.Status,
+            dto.Priority,
+            dto.Deadline,
+            dto.EstimatedDurationMinutes,
+            dto.SubjectId,
+            dto.StudyPlanId,
+            GetCurrentUserId());
 
-        var task = await _context.StudyTasks
-            .Include(t => t.Subject)
-            .FirstOrDefaultAsync(t => t.Id == id && t.Subject.UserId == userId);
+        var success = await _mediator.Send(command);
 
-        if (task == null)
+        if (!success)
             return NotFound();
 
-        var subject = await _context.Subjects
-            .FirstOrDefaultAsync(s => s.Id == dto.SubjectId && s.UserId == userId);
+        return NoContent();
+    }
 
-        if (subject == null)
-            return BadRequest("Subject does not exist or does not belong to current user.");
+    [HttpPatch("{id}/complete")]
+    public async Task<IActionResult> Complete(int id)
+    {
+        var command = new CompleteStudyTaskCommand(
+            id,
+            GetCurrentUserId());
 
-        if (dto.StudyPlanId != null)
-        {
-            var studyPlanExists = await _context.StudyPlans
-                .AnyAsync(sp => sp.Id == dto.StudyPlanId && sp.UserId == userId);
+        var success = await _mediator.Send(command);
 
-            if (!studyPlanExists)
-                return BadRequest("Study plan does not exist or does not belong to current user.");
-        }
-
-        task.Title = dto.Title;
-        task.Description = dto.Description;
-        task.Status = dto.Status;
-        task.Priority = dto.Priority;
-        task.Deadline = dto.Deadline;
-        task.EstimatedDurationMinutes = dto.EstimatedDurationMinutes;
-        task.SubjectId = dto.SubjectId;
-        task.StudyPlanId = dto.StudyPlanId;
-
-        await _context.SaveChangesAsync();
+        if (!success)
+            return NotFound();
 
         return NoContent();
     }
@@ -281,17 +147,14 @@ public class StudyTasksController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var userId = GetCurrentUserId();
+        var command = new DeleteStudyTaskCommand(
+            id,
+            GetCurrentUserId());
 
-        var task = await _context.StudyTasks
-            .Include(t => t.Subject)
-            .FirstOrDefaultAsync(t => t.Id == id && t.Subject.UserId == userId);
+        var success = await _mediator.Send(command);
 
-        if (task == null)
+        if (!success)
             return NotFound();
-
-        _context.StudyTasks.Remove(task);
-        await _context.SaveChangesAsync();
 
         return NoContent();
     }
